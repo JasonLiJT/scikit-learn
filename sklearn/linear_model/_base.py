@@ -642,6 +642,7 @@ class LinearRegression(MultiOutputMixin, RegressorMixin, LinearModel):
             sample_weight = _check_sample_weight(
                 sample_weight, X, dtype=X.dtype, ensure_non_negative=True
             )
+            sample_weight = sample_weight / sample_weight.mean()
 
         # Note that neither _rescale_data nor the rest of the fit method of
         # LinearRegression can benefit from in-place operations when X is a
@@ -699,7 +700,7 @@ class LinearRegression(MultiOutputMixin, RegressorMixin, LinearModel):
                 self.coef_ = np.vstack([out[0] for out in outs])
         else:
             # cut-off ratio for small singular values
-            cond = max(X.shape) * np.finfo(X.dtype).eps
+            cond = None  # max(X.shape) * np.finfo(np.float64).eps
             self.coef_, _, self.rank_, self.singular_ = linalg.lstsq(X, y, cond=cond)
             self.coef_ = self.coef_.T
 
