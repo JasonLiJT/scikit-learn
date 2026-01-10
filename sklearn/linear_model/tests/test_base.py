@@ -844,3 +844,26 @@ def test_linear_regression_sample_weight_consistency(
     assert_allclose(reg1.coef_, reg2.coef_, rtol=1e-6)
     if fit_intercept:
         assert_allclose(reg1.intercept_, reg2.intercept_)
+
+
+def test_linear_regression_float32_large_samples(global_random_seed):
+    """Check LinearRegression on float32 with large sample size.
+
+    Non-regression test for:
+    https://github.com/scikit-learn/scikit-learn/issues/30248
+    """
+    rng = np.random.RandomState(global_random_seed)
+    n_samples = 500_000
+
+    x1 = rng.rand(n_samples)
+    x2 = 0.3 * x1 + 0.1 * rng.rand(n_samples)
+    X = np.column_stack([x1, x2])
+    y = X @ [0.5, 2.0] + 0.1 * rng.rand(n_samples)
+    X32, y32 = X.astype(np.float32), y.astype(np.float32)
+
+    # Scipy results on float64 are considered as ground truth
+    expected_coef = linalg.lstsq(X, y)[0]
+
+    reg = LinearRegression(fit_intercept=False).fit(X32, y32)
+    # On float32 we expect some loss of precision but not a completely wrong result
+    assert_allclose(reg.coef_, expected_coef, rtol=1e-4)
